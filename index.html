@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyan Cat 时间进度条</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #0a0a1a;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    position: relative;
+  }
+
+  /* 背景星空 */
+  #stars-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  /* Dock 模拟 */
+  .dock {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 65px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-bottom: none;
+    border-radius: 18px 18px 0 0;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1;
+  }
+  .dock-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--c1), var(--c2));
+    transition: transform 0.2s;
+  }
+  .dock-icon:hover { transform: scale(1.3) translateY(-8px); }
+
+  /* 彩虹拖尾 Canvas */
+  #rainbow-canvas {
+    position: fixed;
+    bottom: 65px;
+    left: 0;
+    z-index: 9;
+    pointer-events: none;
+  }
+
+  /* Nyan Cat 容器 */
+  #nyan-container {
+    position: fixed;
+    bottom: 65px;
+    left: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* 像素猫 Canvas */
+  #cat-canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+
+  /* 时间气泡 */
+  .time-bubble {
+    position: absolute;
+    top: -55px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.88);
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 12px;
+    padding: 6px 14px;
+    white-space: nowrap;
+    font-size: 13px;
+    color: #fff;
+    pointer-events: auto;
+    transition: opacity 0.3s;
+  }
+  .time-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0,0,0,0.88);
+  }
+  .time-bubble .progress-text {
+    color: #ffd700;
+    font-weight: bold;
+  }
+  .time-bubble .mini-bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .time-bubble .mini-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff);
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+
+  /* 控制面板 */
+  .controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .controls button {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    color: #fff;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all 0.2s;
+  }
+  .controls button:hover {
+    background: rgba(255,255,255,0.22);
+    transform: scale(1.05);
+  }
+  .controls button.active {
+    background: rgba(255,200,0,0.25);
+    border-color: #ffd700;
+    color: #ffd700;
+  }
+
+  .info {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .info h2 {
+    font-size: 20px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .info .sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景星空 -->
+<canvas id="stars-canvas"></canvas>
+
+<!-- 信息 -->
+<div class="info">
+  <h2>🌈 Nyan Cat 时间进度条</h2>
+  <div id="time-display"></div>
+  <div class="sub">小猫位置 = 当天时间进度</div>
+</div>
+
+<!-- 控制面板 -->
+<div class="controls">
+  <button onclick="setSize('small')" id="btn-s">S 小号</button>
+  <button onclick="setSize('medium')" id="btn-m" class="active">M 中号</button>
+  <button onclick="setSize('large')" id="btn-l">L 大号</button>
+  <button onclick="toggleBubble()" id="btn-bubble">气泡: 显示</button>
+</div>
+
+<!-- 彩虹拖尾 -->
+<canvas id="rainbow-canvas"></canvas>
+
+<!-- Nyan Cat -->
+<div id="nyan-container">
+  <canvas id="cat-canvas"></canvas>
+  <div class="time-bubble" id="time-bubble">
+    <span id="bubble-time">00:00:00</span> · <span class="progress-text" id="bubble-progress">0%</span>
+    <div class="mini-bar"><div class="mini-bar-fill" id="mini-bar-fill"></div></div>
+  </div>
+</div>
+
+<!-- Dock -->
+<div class="dock">
+  <div class="dock-icon" style="--c1:#ff6b6b;--c2:#ee5a24"></div>
+  <div class="dock-icon" style="--c1:#feca57;--c2:#ff9f43"></div>
+  <div class="dock-icon" style="--c1:#48dbfb;--c2:#0abde3"></div>
+  <div class="dock-icon" style="--c1:#1dd1a1;--c2:#10ac84"></div>
+  <div class="dock-icon" style="--c1:#5f27cd;--c2:#341f97"></div>
+  <div class="dock-icon" style="--c1:#ff9ff3;--c2:#f368e0"></div>
+  <div class="dock-icon" style="--c1:#54a0ff;--c2:#2e86de"></div>
+  <div class="dock-icon" style="--c1:#ff9f43;--c2:#ee5a24"></div>
+</div>
+
+<script>
+// ===== 配置 =====
+const SCALES = { small: 2, medium: 3, large: 4 };
+let currentScale = 'medium';
+let showBubble = true;
+let animFrame = 0;
+let animTimer = 0;
+
+// ===== 颜色映射 =====
+const C = {
+  _: null,
+  P: '#ff99cc',   // 粉色 Pop-Tart
+  F: '#f0c090',   // 饼干糖霜
+  G: '#999999',   // 灰色猫身
+  D: '#777777',   // 深灰
+  W: '#ffffff',   // 白色眼睛
+  K: '#000000',   // 黑色瞳孔
+  E: '#ff6699',   // 耳朵内粉
+  S: '#ffaaaa',   // 脸颊
+};
+
+// ===== Nyan Cat 像素数据 =====
+// 完整猫（含头和身体）- 32x14 帧0
+const CAT_F0 = [
+  '____GG____GG__________________',
+  '___GGG____GGG_________________',
+  'GGGGGGGGGGGGGGGG______________',
+  'GGGGGGGGGGGGGGGGGG____________',
+  'GGGGWWGGGGGGWWGGGG____________',
+  'GGGGWKGGRGGWKG__GGG___________',
+  'GGGGGGGGGGGGGSSGGGG___________',
+  '_GGGGGGGGGGGGGGGGG____________',
+  '___GGGGPPPPPPPPPPPPGG_________',
+  '__GGPPPPPPPPPPPPPPPPGG________',
+  '_GGPPFFPPPPPPPPFFPPPPGG_______',
+  '_GGPPFFPFFPPPPFFPFFPPGG_______',
+  '_GGPPPPPPPPPPPPPPPPPPGGGGG____',
+  '_GGGGGGGGGGGGGGGGGGGGGGGGG____',
+  'GGGGGGGGGGGGGGGGGGGGGGGGGGG___',
+  'GGGGGGGGGGGGGGGGGGGGGGGGGGGG__',
+  '_GGGGGGGGGGGGGGGGGGGGGGGGGGG__',
+  '__GGGGGGGGGGGG__GGGGGGGGGG____',
+  '___GGGGGGGGGG____GGGGGGGG_____',
+  '___GGGG__GGGG____GGGG__GG_____',
+];
+
+// 帧1 - 腿部动画
+const CAT_F1 = [
+  '____GG____GG__________________',
+  '___GGG____GGG_________________',
+  'GGGGGGGGGGGGGGGG______________',
+  'GGGGGGGGGGGGGGGGGG____________',
+  'GGGGWWGGGGGGWWGGGG____________',
+  'GGGGWKGGRGGWKG__GGG___________',
+  'GGGGGGGGGGGGGSSGGGG___________',
+  '_GGGGGGGGGGGGGGGGG____________',
+  '___GGGGPPPPPPPPPPPPGG_________',
+  '__GGPPPPPPPPPPPPPPPPGG________',
+  '_GGPPFFPPPPPPPPFFPPPPGG_______',
+  '_GGPPFFPFFPPPPFFPFFPPGG_______',
+  '_GGPPPPPPPPPPPPPPPPPPGGGGG____',
+  '_GGGGGGGGGGGGGGGGGGGGGGGGG____',
+  'GGGGGGGGGGGGGGGGGGGGGGGGGGG___',
+  'GGGGGGGGGGGGGGGGGGGGGGGGGGGG__',
+  '_GGGGGGGGGGGGGGGGGGGGGGGGGGG__',
+  '__GGGGGGGGGGGG__GGGGGGGGGG____',
+  '___GGGGGG__GG____GGGGGGGG_____',
+  '___GG__GGGGGG____GGGG__GG_____',
+];
+
+const RAINBOW = ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff', '#8800ff'];
+
+// ===== Canvas 元素 =====
+const starsCanvas = document.getElementById('stars-canvas');
+const starsCtx = starsCanvas.getContext('2d');
+const rainbowCanvas = document.getElementById('rainbow-canvas');
+const rainbowCtx = rainbowCanvas.getContext('2d');
+const catCanvas = document.getElementById('cat-canvas');
+const catCtx = catCanvas.getContext('2d');
+
+// ===== 星星 =====
+let stars = [];
+function initStars() {
+  starsCanvas.width = window.innerWidth;
+  starsCanvas.height = window.innerHeight;
+  stars = [];
+  for (let i = 0; i < 250; i++) {
+    stars.push({
+      x: Math.random() * starsCanvas.width,
+      y: Math.random() * starsCanvas.height,
+      size: Math.random() * 2 + 0.5,
+      speed: Math.random() * 0.3 + 0.05,
+      alpha: Math.random(),
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function drawStars(t) {
+  const w = starsCanvas.width, h = starsCanvas.height;
+  // 深空渐变
+  const grad = starsCtx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#0d0d2b');
+  grad.addColorStop(0.4, '#1a1a3e');
+  grad.addColorStop(0.8, '#141432');
+  grad.addColorStop(1, '#0a0a20');
+  starsCtx.fillStyle = grad;
+  starsCtx.fillRect(0, 0, w, h);
+
+  for (const s of stars) {
+    s.x -= s.speed;
+    if (s.x < -2) s.x = w + 2;
+    const a = (Math.sin(t * 0.002 + s.phase) + 1) / 2 * 0.7 + 0.3;
+    starsCtx.fillStyle = `rgba(255,255,255,${a})`;
+    starsCtx.fillRect(Math.round(s.x), Math.round(s.y), Math.ceil(s.size), Math.ceil(s.size));
+  }
+}
+
+// ===== 绘制像素猫 =====
+function drawPixelArt(ctx, grid, x, y, scale) {
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    for (let c = 0; c < row.length; c++) {
+      const ch = row[c];
+      const color = C[ch];
+      if (color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
+      }
+    }
+  }
+}
+
+function renderCat(frame) {
+  const grid = frame === 0 ? CAT_F0 : CAT_F1;
+  const s = SCALES[currentScale];
+  const w = grid[0].length * s;
+  const h = grid.length * s;
+
+  catCanvas.width = w;
+  catCanvas.height = h;
+  catCanvas.style.width = w + 'px';
+  catCanvas.style.height = h + 'px';
+
+  catCtx.clearRect(0, 0, w, h);
+  catCtx.imageSmoothingEnabled = false;
+  drawPixelArt(catCtx, grid, 0, 0, s);
+}
+
+// ===== 彩虹拖尾 =====
+let rainbowAnim = 0;
+function drawRainbow(catLeft) {
+  const s = SCALES[currentScale];
+  const grid = CAT_F0;
+  const bandTotalH = grid.length * s; // 猫高度
+  const bandH = bandTotalH / 6;
+  const canvasH = bandTotalH;
+  
+  rainbowCanvas.width = window.innerWidth;
+  rainbowCanvas.height = canvasH;
+  rainbowCanvas.style.height = canvasH + 'px';
+  rainbowCanvas.style.bottom = '65px';
+
+  rainbowCtx.clearRect(0, 0, rainbowCanvas.width, canvasH);
+  
+  if (catLeft <= 2) return;
+  
+  rainbowAnim += 0.5;
+
+  for (let i = 0; i < 6; i++) {
+    const y = i * bandH;
+    const baseColor = RAINBOW[i];
+    
+    // 解析颜色
+    for (let x = 0; x < catLeft; x += 2) {
+      // 波纹效果
+      const wave = Math.sin((x - rainbowAnim * 4) * 0.05) * 0.12;
+      // 闪烁星点
+      const sparkle = Math.sin((x + rainbowAnim * 7) * 0.13 + i) > 0.92 ? 0.3 : 0;
+      
+      rainbowCtx.globalAlpha = Math.max(0.4, Math.min(1, 0.75 + wave + sparkle));
+      rainbowCtx.fillStyle = baseColor;
+      rainbowCtx.fillRect(x, y, 2, bandH + 1);
+    }
+  }
+  rainbowCtx.globalAlpha = 1;
+
+  // 闪烁十字星
+  const sparkleCount = 5;
+  for (let i = 0; i < sparkleCount; i++) {
+    const sx = (catLeft * (0.1 + i * 0.18)) % catLeft;
+    const sy = (Math.sin(i * 2.1 + rainbowAnim * 0.03) + 1) / 2 * canvasH;
+    const sa = (Math.sin(rainbowAnim * 0.08 + i * 1.5) + 1) / 2;
+    
+    if (sa > 0.3) {
+      rainbowCtx.fillStyle = `rgba(255,255,255,${sa * 0.9})`;
+      const sz = 2;
+      // 十字星
+      rainbowCtx.fillRect(sx, sy - sz, sz, sz * 3);
+      rainbowCtx.fillRect(sx - sz, sy, sz * 3, sz);
+    }
+  }
+}
+
+// ===== 时间计算 =====
+function getTimeProgress() {
+  const now = new Date();
+  const totalSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  return { progress: totalSec / 86400, now };
+}
+
+// ===== 气泡 =====
+function updateBubble(now, progress) {
+  const bubble = document.getElementById('time-bubble');
+  const timeStr = now.toTimeString().slice(0, 8);
+  const pct = (progress * 100).toFixed(2);
+
+  document.getElementById('bubble-time').textContent = timeStr;
+  document.getElementById('bubble-progress').textContent = pct + '%';
+  document.getElementById('mini-bar-fill').style.width = pct + '%';
+  document.getElementById('time-display').textContent = timeStr + ' · 进度 ' + pct + '%';
+
+  bubble.style.opacity = showBubble ? '1' : '0';
+}
+
+// ===== 控制 =====
+function setSize(size) {
+  currentScale = size;
+  document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + size[0]).classList.add('active');
+}
+
+function toggleBubble() {
+  showBubble = !showBubble;
+  document.getElementById('btn-bubble').textContent = '气泡: ' + (showBubble ? '显示' : '隐藏');
+}
+
+// ===== 主循环 =====
+function mainLoop(t) {
+  drawStars(t);
+
+  const { progress, now } = getTimeProgress();
+  const grid = CAT_F0;
+  const s = SCALES[currentScale];
+  const catW = grid[0].length * s;
+  const catH = grid.length * s;
+
+  // 猫 X 位置
+  const padding = 10;
+  const maxX = window.innerWidth - catW - padding;
+  const catX = padding + progress * maxX;
+
+  // 动画帧
+  animTimer++;
+  if (animTimer >= 10) {
+    animTimer = 0;
+    animFrame = 1 - animFrame;
+  }
+
+  // 定位
+  const container = document.getElementById('nyan-container');
+  container.style.left = catX + 'px';
+  container.style.bottom = '65px';
+
+  // 渲染
+  renderCat(animFrame);
+  drawRainbow(catX);
+  updateBubble(now, progress);
+
+  requestAnimationFrame(mainLoop);
+}
+
+// ===== 启动 =====
+window.addEventListener('resize', initStars);
+initStars();
+requestAnimationFrame(mainLoop);
+</script>
+</body>
+</html>
