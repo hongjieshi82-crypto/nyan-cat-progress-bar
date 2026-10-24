@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>北回归线 · SageMeet 智遇</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #7051C5;
+      --purple-deep: #5A3DAD;
+      --paper: #FBF9F7;
+      --paper-warm: #F6F1EA;
+      --ink: #2E2533;
+      --muted: #716978;
+      --lavender: #EEE8F7;
+      --border: #E6E0EC;
+      --white: #FFFFFF;
+      --shadow: 0 18px 50px rgba(46, 37, 51, 0.08);
+      --shadow-lg: 0 28px 80px rgba(46, 37, 51, 0.12);
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+      --sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      --section-pad: clamp(1.5rem, 4vw, 3.5rem);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-snap-type: y mandatory;
+      height: 100%;
+    }
+
+    body {
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--purple) 28%, transparent);
+      color: var(--ink);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--purple);
+      outline-offset: 3px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--paper-warm); }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--purple) 40%, var(--border));
+      border-radius: 99px;
+    }
+
+    .deck {
+      height: 100dvh;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .section {
+      position: relative;
+      min-height: 100dvh;
+      height: 100dvh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      display: flex;
+      flex-direction: column;
+      padding: var(--section-pad);
+      padding-right: calc(var(--section-pad) + 2.5rem);
+      overflow: hidden;
+    }
+
+    /* Dot nav */
+    .dots {
+      position: fixed;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .dots a {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--ink) 18%, transparent);
+      border: 1px solid transparent;
+      transition: transform 0.35s var(--ease), background 0.35s var(--ease), box-shadow 0.35s var(--ease);
+      text-indent: -9999px;
+      overflow: hidden;
+    }
+
+    .dots a[aria-current="true"] {
+      background: var(--purple);
+      transform: scale(1.35);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--purple) 18%, transparent);
+    }
+
+    .dots a:hover { background: var(--purple); }
+
+    .counter {
+      font-family: var(--sans);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .counter span { color: var(--purple); font-weight: 600; }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: clamp(1.25rem, 3vh, 2.25rem);
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: clamp(1.75rem, 3.2vw, 2.6rem);
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+
+    .section-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* Entrance */
+    .reveal {
+      opacity: 1;
+      transform: none;
+      filter: none;
+      transition:
+        opacity 0.9s var(--ease),
+        transform 0.9s var(--ease),
+        filter 0.9s var(--ease);
+    }
+
+    .section:not(.is-active) .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      filter: blur(2px);
+    }
+
+    .section.is-active .reveal { transition-delay: var(--d, 0ms); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html, .deck { scroll-behavior: auto; }
+      .reveal,
+      .section:not(.is-active) .reveal,
+      .section.is-active .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        transition: none !important;
+      }
+      .dots a { transition: none; }
+    }
+
+    /* ========== 01 Home ========== */
+    .s-home {
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 80%, color-mix(in srgb, var(--lavender) 90%, transparent) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 15% 20%, color-mix(in srgb, var(--purple) 8%, transparent) 0%, transparent 50%),
+        linear-gradient(165deg, var(--paper) 0%, var(--paper-warm) 100%);
+      justify-content: space-between;
+      align-items: stretch;
+    }
+
+    .home-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .brand-mark img {
+      height: 28px;
+      width: auto;
+      display: block;
+    }
+
+    .home-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 52rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .wordmark {
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: clamp(3.8rem, 11vw, 8.5rem);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: clamp(1.25rem, 3vh, 2rem);
+    }
+
+    .slogan {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+      color: var(--muted);
+      max-width: 22em;
+      line-height: 1.55;
+    }
+
+    .slogan em {
+      font-style: normal;
+      color: var(--purple);
+    }
+
+    .home-mascot {
+      position: absolute;
+      right: clamp(-2%, 2vw, 4%);
+      bottom: clamp(-4%, 0vh, 2%);
+      width: min(38vw, 420px);
+      height: auto;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.95;
+      mix-blend-mode: multiply;
+      -webkit-mask-image: radial-gradient(ellipse 72% 72% at 50% 48%, #000 52%, transparent 78%);
+      mask-image: radial-gradient(ellipse 72% 72% at 50% 48%, #000 52%, transparent 78%);
+      filter: drop-shadow(0 24px 40px rgba(112, 81, 197, 0.14));
+    }
+
+    .home-hint {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+    }
+
+    .home-hint .chev {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      animation: bob 2.2s var(--ease) infinite;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(4px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-hint .chev { animation: none; }
+    }
+
+    /* ========== 02 Team ========== */
+    .s-team {
+      background:
+        radial-gradient(ellipse 70% 50% at 12% 0%, rgba(238, 232, 247, 0.9) 0%, transparent 55%),
+        var(--paper);
+    }
+
+    .team-intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+      margin-bottom: clamp(1.1rem, 2.8vh, 1.85rem);
+      flex-wrap: wrap;
+    }
+
+    .team-lead {
+      font-family: var(--serif);
+      font-size: clamp(1.05rem, 1.8vw, 1.4rem);
+      color: var(--muted);
+      max-width: 34em;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .team-lead strong {
+      color: var(--purple);
+      font-weight: 600;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(0.75rem, 1.4vw, 1.15rem);
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .person {
+      background: var(--white);
+      border: 1px solid rgba(230, 224, 236, 0.9);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+      transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease);
+      min-height: 0;
+    }
+
+    .person:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .person:hover .person-photo img {
+      transform: scale(1.04);
+    }
+
+    .person-photo {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      background: var(--lavender);
+      flex-shrink: 0;
+    }
+
+    .person-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 55%, rgba(46, 37, 51, 0.22) 100%);
+      pointer-events: none;
+    }
+
+    .person-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      transition: transform 0.7s var(--ease);
+    }
+
+    .person-meta {
+      padding: clamp(0.85rem, 1.5vw, 1.15rem) clamp(0.9rem, 1.5vw, 1.2rem) clamp(1rem, 1.6vw, 1.25rem);
+      display: flex;
+      flex-direction: column;
+      gap: 0.28rem;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .person-role {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--purple);
+      text-transform: uppercase;
+    }
+
+    .person-name {
+      font-family: var(--serif);
+      font-size: clamp(1.2rem, 1.9vw, 1.55rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+
+    .person-title {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+    }
+
+    .person-duties {
+      margin-top: auto;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .team-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .team-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+      }
+      .person-duties { display: none; }
+      .person-name { font-size: 1.05rem; }
+    }
+
+    /* ========== 03 Pain / Solution ========== */
+    .s-pain {
+      background:
+        linear-gradient(180deg, var(--paper-warm) 0%, var(--paper) 40%, var(--lavender) 100%);
+    }
+
+    .pain-audience {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: clamp(1rem, 2.5vh, 1.75rem);
+    }
+
+    .pain-audience strong { color: var(--ink); font-weight: 600; }
+
+    .pain-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: clamp(1.25rem, 3vw, 2.5rem);
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .pain-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .pain-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: clamp(1rem, 1.8vw, 1.35rem) clamp(1.15rem, 2vw, 1.5rem);
+      box-shadow: var(--shadow);
+    }
+
+    .pain-card h3 {
+      font-family: var(--serif);
+      font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+      font-weight: 600;
+      margin-bottom: 0.45rem;
+      letter-spacing: -0.01em;
+    }
+
+    .pain-card p {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .solution-panel {
+      background: var(--ink);
+      color: #F5F2F8;
+      border-radius: 16px;
+      padding: clamp(1.35rem, 2.5vw, 2rem);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .solution-panel::before {
+      content: "";
+      position: absolute;
+      inset: auto -20% -30% 40%;
+      height: 70%;
+      background: radial-gradient(circle, color-mix(in srgb, var(--purple) 55%, transparent), transparent 70%);
+      pointer-events: none;
+    }
+
+    .solution-panel > * { position: relative; z-index: 1; }
+
+    .solution-panel h3 {
+      font-family: var(--serif);
+      font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: clamp(1rem, 2vh, 1.5rem);
+      letter-spacing: -0.02em;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      flex: 1;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+    }
+
+    .step-num {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: color-mix(in srgb, #C4B5F0 90%, white);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.4;
+    }
+
+    .step h4 {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .step p {
+      font-size: 0.86rem;
+      color: color-mix(in srgb, #F5F2F8 72%, transparent);
+      line-height: 1.5;
+    }
+
+    .solution-close {
+      margin-top: clamp(1rem, 2vh, 1.5rem);
+      padding-top: 1rem;
+      border-top: 1px solid color-mix(in srgb, white 14%, transparent);
+      font-family: var(--serif);
+      font-size: 0.95rem;
+      line-height: 1.55;
+      color: color-mix(in srgb, #F5F2F8 88%, transparent);
+    }
+
+    /* ========== 04 Demo ========== */
+    .s-demo {
+      background: var(--paper);
+    }
+
+    .demo-line {
+      font-family: var(--serif);
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+      color: var(--muted);
+      margin-bottom: clamp(1rem, 2.5vh, 1.75rem);
+    }
+
+    .demo-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+      gap: clamp(1.25rem, 3vw, 2.5rem);
+      flex: 1;
+      min-height: 0;
+      align-items: center;
+    }
+
+    .demo-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .demo-step {
+      display: grid;
+      grid-template-columns: 2.4rem 1fr;
+      gap: 0.75rem;
+      align-items: start;
+    }
+
+    .demo-step .n {
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 50%;
+      background: var(--lavender);
+      color: var(--purple);
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: grid;
+      place-items: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .demo-step h3 {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .demo-step p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .device {
+      position: relative;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0.65rem;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .device img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      background: #e1e3e1;
+    }
+
+    /* ========== 05 Business ========== */
+    .s-biz {
+      background:
+        radial-gradient(ellipse 60% 50% at 90% 10%, color-mix(in srgb, var(--lavender) 80%, transparent), transparent 60%),
+        var(--paper-warm);
+    }
+
+    .biz-line {
+      font-family: var(--serif);
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+      color: var(--muted);
+      margin-bottom: clamp(1rem, 2.2vh, 1.5rem);
+    }
+
+    .biz-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: clamp(1rem, 2.5vw, 2rem);
+      flex: 1;
+      min-height: 0;
+    }
+
+    .biz-core {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: clamp(1.1rem, 2vw, 1.5rem);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .biz-core h3 {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .price-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .price-pill {
+      background: var(--lavender);
+      color: var(--purple-deep);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .biz-note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .biz-note strong { color: var(--ink); font-weight: 600; }
+
+    .milestones {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin-top: auto;
+    }
+
+    .mile {
+      background: var(--ink);
+      color: #F5F2F8;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+    }
+
+    .mile .when {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #C4B5F0;
+      margin-bottom: 0.25rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mile .what {
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: color-mix(in srgb, #F5F2F8 80%, transparent);
+    }
+
+    .biz-right {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-height: 0;
+    }
+
+    .table-wrap {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: clamp(0.9rem, 1.6vw, 1.25rem);
+      box-shadow: var(--shadow);
+      overflow: auto;
+    }
+
+    .table-wrap h3 {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: right;
+      padding: 0.55rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+    }
+
+    td.neg { color: #A0485A; }
+    td.pos { color: var(--purple-deep); font-weight: 600; }
+
+    .fund-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      background: var(--lavender);
+      border-radius: 12px;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.9rem;
+    }
+
+    .fund-bar strong {
+      color: var(--purple-deep);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footnote {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-top: auto;
+    }
+
+    /* ========== 06 Close ========== */
+    .s-close {
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 100%, color-mix(in srgb, var(--lavender) 95%, transparent) 0%, transparent 60%),
+        linear-gradient(180deg, var(--paper) 0%, var(--paper-warm) 100%);
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding-bottom: clamp(2rem, 6vh, 4rem);
+    }
+
+    .close-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 40rem;
+      gap: clamp(1rem, 2.5vh, 1.75rem);
+    }
+
+    .close-slogan {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: clamp(1.65rem, 3.8vw, 2.75rem);
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .close-slogan .line2 { color: var(--purple); }
+
+    .close-thanks {
+      font-size: clamp(1rem, 1.6vw, 1.2rem);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .close-mascot {
+      width: min(42vw, 280px);
+      height: auto;
+      margin: 0.25rem 0;
+      mix-blend-mode: multiply;
+      -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 48%, #000 55%, transparent 80%);
+      mask-image: radial-gradient(ellipse 70% 70% at 50% 48%, #000 55%, transparent 80%);
+      filter: drop-shadow(0 18px 36px rgba(112, 81, 197, 0.16));
+    }
+
+    .close-brand {
+      font-family: var(--serif);
+      font-size: clamp(1.5rem, 2.8vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .close-partner {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .section {
+        height: auto;
+        min-height: 100dvh;
+        padding-right: var(--section-pad);
+        padding-bottom: 3.5rem;
+      }
+      .dots { right: 0.65rem; }
+      .home-mascot {
+        width: min(48vw, 220px);
+        opacity: 0.75;
+      }
+      .team-grid { grid-template-columns: 1fr; }
+      .pain-layout,
+      .demo-layout,
+      .biz-layout { grid-template-columns: 1fr; }
+      .milestones { grid-template-columns: 1fr 1fr; }
+      .wordmark { font-size: clamp(3rem, 14vw, 4.5rem); }
+    }
+
+    @media (max-height: 720px) and (min-width: 901px) {
+      .person { padding: 0.9rem 1.1rem; gap: 0.35rem; }
+      .person-name { font-size: 1.25rem; }
+      .person-duties { font-size: 0.8rem; padding-top: 0.5rem; }
+      .section-title { font-size: 1.6rem; }
+      .wordmark { font-size: clamp(3.2rem, 8vw, 5.5rem); }
+    }
+  </style>
+<meta property="og:title" content="北回归线 SageMeet 智遇" />
+<meta property="og:description" content="一个基于真实人生经历与AI深度倾诉的社交匹配平台，旨在帮助城市单身青年通过价值观与情感线索遇见同频的伙伴。" />
+<meta property="og:url" content="https://arctic-comet-5xxj.here.now/index.html" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" /></head>
+<body>
+  <!--
+    THESIS: Warm paper pitch manuscript — team wordmark 北回归线 as the hero memory; refuses neon-startup metric heroes and same-size icon card scaffolds.
+    OWN-WORLD: Paper #FBF9F7/#F6F1EA, ink #2E2533, purple #7051C5, lavender wash #EEE8F7; Noto Serif SC display + Noto Sans SC UI; soft device frame + mascot warmth.
+    STORY: Judges meet team → feel pain→solution → see product → trust plan → leave with slogan.
+    FIRST VIEWPORT: 01/06 counter, massive centered-left 北回归线, slogan, soft 小知 lower-right on paper/lavender wash.
+    FORM: Brief-pinned editorial warm-paper pitch (code-led; brief paints the picture; executor session).
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+  -->
+
+  <nav class="dots" aria-label="章节导航">
+    <a href="#s01" aria-current="true" data-i="0">01 首页</a>
+    <a href="#s02" data-i="1">02 创始团队</a>
+    <a href="#s03" data-i="2">03 痛点与解决方案</a>
+    <a href="#s04" data-i="3">04 网站演示</a>
+    <a href="#s05" data-i="4">05 商业计划</a>
+    <a href="#s06" data-i="5">06 致谢</a>
+  </nav>
+
+  <main class="deck" id="deck">
+    <!-- 01 -->
+    <section class="section s-home is-active" id="s01" data-index="0" aria-label="首页">
+      <div class="home-top">
+        <div class="brand-mark reveal" style="--d:60ms">
+          <img src="assets/logo.png" alt="SageMeet 智遇" />
+        </div>
+        <p class="counter reveal" style="--d:80ms"><span>01</span> / 06</p>
+      </div>
+
+      <div class="home-center">
+        <h1 class="wordmark reveal" style="--d:140ms">北回归线</h1>
+        <p class="slogan reveal" style="--d:280ms">用真实的人生经历，遇见同频的你。</p>
+      </div>
+
+      <img class="home-mascot reveal" style="--d:400ms" src="assets/xiaozhi.png" alt="小知" />
+
+      <p class="home-hint reveal" style="--d:520ms">
+        <span class="chev" aria-hidden="true">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        滚轮或方向键翻页
+      </p>
+    </section>
+
+    <!-- 02 -->
+    <section class="section s-team" id="s02" data-index="1" aria-label="创始团队">
+      <div class="section-head">
+        <h2 class="section-title reveal">创始团队</h2>
+        <p class="counter reveal" style="--d:60ms"><span>02</span> / 06</p>
+      </div>
+      <div class="section-body">
+        <div class="team-intro reveal" style="--d:100ms">
+          <p class="team-lead">
+            <strong>北回归线</strong> · 接纳全部的过往，让真实的经历成为相遇的起点。
+          </p>
+        </div>
+        <div class="team-grid">
+          <article class="person reveal" style="--d:160ms">
+            <div class="person-photo">
+              <img src="assets/team/ceo-xuzixuan.jpg" alt="徐梓轩" width="720" height="900" loading="eager" />
+            </div>
+            <div class="person-meta">
+              <p class="person-role">CEO</p>
+              <h3 class="person-name">徐梓轩</h3>
+              <p class="person-title">首席执行官</p>
+              <p class="person-duties">整体战略 / 融资 / 顶层决策 / 核心对外沟通</p>
+            </div>
+          </article>
+          <article class="person reveal" style="--d:220ms">
+            <div class="person-photo">
+              <img src="assets/team/cto-xuanmaosen.jpg" alt="轩茂森" width="720" height="900" loading="eager" />
+            </div>
+            <div class="person-meta">
+              <p class="person-role">CTO</p>
+              <h3 class="person-name">轩茂森</h3>
+              <p class="person-title">首席技术官</p>
+              <p class="person-duties">AI 算法架构 / 小程序与网站研发 / 技术体系</p>
+            </div>
+          </article>
+          <article class="person reveal" style="--d:280ms">
+            <div class="person-photo">
+              <img src="assets/team/cpo-shihongjie.jpg" alt="史鸿洁" width="720" height="900" loading="eager" />
+            </div>
+            <div class="person-meta">
+              <p class="person-role">CPO</p>
+              <h3 class="person-name">史鸿洁</h3>
+              <p class="person-title">首席产品官</p>
+              <p class="person-duties">产品设计 / 用户链路 / 标签匹配机制 / 原型与需求</p>
+            </div>
+          </article>
+          <article class="person reveal" style="--d:340ms">
+            <div class="person-photo">
+              <img src="assets/team/cgo-lichao.jpg" alt="李超" width="720" height="900" loading="eager" />
+            </div>
+            <div class="person-meta">
+              <p class="person-role">CGO</p>
+              <h3 class="person-name">李超</h3>
+              <p class="person-title">首席增长官</p>
+              <p class="person-duties">品牌创意策划 / 商务对接 / 用户运营 / 公关传播</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section class="section s-pain" id="s03" data-index="2" aria-label="痛点与解决方案">
+      <div class="section-head">
+        <h2 class="section-title reveal">痛点与解决方案</h2>
+        <p class="counter reveal" style="--d:60ms"><span>03</span> / 06</p>
+      </div>
+      <div class="section-body">
+        <p class="pain-audience reveal" style="--d:100ms">面向<strong>渴望深度连接的城市单身青年</strong></p>
+        <div class="pain-layout">
+          <div class="pain-col">
+            <article class="pain-card reveal" style="--d:160ms">
+              <h3>空泛的社交 · 精修人设</h3>
+              <p>看到了条件，却难以了解一个真实的人</p>
+            </article>
+            <article class="pain-card reveal" style="--d:220ms">
+              <h3>快餐式匹配</h3>
+              <p>有了联系，却缺少深入交流的起点</p>
+            </article>
+          </div>
+          <aside class="solution-panel reveal" style="--d:280ms">
+            <h3>以真实经历遇见同频的人</h3>
+            <div class="steps">
+              <div class="step">
+                <span class="step-num">01</span>
+                <div>
+                  <h4>AI 树洞倾诉</h4>
+                  <p>用自然对话，说出独特的人生经历</p>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-num">02</span>
+                <div>
+                  <h4>提炼心迹标签</h4>
+                  <p>让经历里的价值观与情感线索被看见</p>
+                </div>
+              </div>
+              <div class="step">
+                <span class="step-num">03</span>
+                <div>
+                  <h4>集齐标签，解锁灵魂匹配</h4>
+                  <p>以共同经历与内在认同，开启有质量的交流</p>
+                </div>
+              </div>
+            </div>
+            <p class="solution-close">真实的人生经历，是被理解的起点，也是相遇的起点。</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section class="section s-demo" id="s04" data-index="3" aria-label="网站演示">
+      <div class="section-head">
+        <h2 class="section-title reveal">网站演示</h2>
+        <p class="counter reveal" style="--d:60ms"><span>04</span> / 06</p>
+      </div>
+      <div class="section-body">
+        <p class="demo-line reveal" style="--d:100ms">一次真实倾诉，开启一场同频相遇</p>
+        <div class="demo-layout">
+          <div class="demo-steps">
+            <div class="demo-step reveal" style="--d:160ms">
+              <span class="n">01</span>
+              <div>
+                <h3>倾诉经历</h3>
+                <p>与 AI 树洞对话</p>
+              </div>
+            </div>
+            <div class="demo-step reveal" style="--d:220ms">
+              <span class="n">02</span>
+              <div>
+                <h3>生成心迹</h3>
+                <p>看见自己的独特线索</p>
+              </div>
+            </div>
+            <div class="demo-step reveal" style="--d:280ms">
+              <span class="n">03</span>
+              <div>
+                <h3>遇见同频</h3>
+                <p>标签解锁匹配</p>
+              </div>
+            </div>
+          </div>
+          <figure class="device reveal" style="--d:200ms">
+            <img src="assets/website-demo.png" alt="SageMeet 智遇网站演示截图" />
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section class="section s-biz" id="s05" data-index="4" aria-label="商业计划">
+      <div class="section-head">
+        <h2 class="section-title reveal">商业计划</h2>
+        <p class="counter reveal" style="--d:60ms"><span>05</span> / 06</p>
+      </div>
+      <div class="section-body">
+        <p class="biz-line reveal" style="--d:100ms">会员订阅为主，先验证高质量连接与持续留存</p>
+        <div class="biz-layout">
+          <div class="biz-core reveal" style="--d:160ms">
+            <h3>收入核心 · 会员订阅</h3>
+            <div class="price-row">
+              <span class="price-pill">39 元/月</span>
+              <span class="price-pill">69 元/月</span>
+              <span class="price-pill">99 元/月</span>
+            </div>
+            <p class="biz-note">拟测试三档价格 · 会员预计贡献 <strong>95%–98%</strong> 收入</p>
+            <div class="milestones">
+              <div class="mile">
+                <p class="when">第 15 月</p>
+                <p class="what">单月经营盈利</p>
+              </div>
+              <div class="mile">
+                <p class="when">第 28 月</p>
+                <p class="what">累计经营现金回本</p>
+              </div>
+            </div>
+          </div>
+          <div class="biz-right">
+            <div class="table-wrap reveal" style="--d:220ms">
+              <h3>三年预测（单位：万元）</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col"></th>
+                    <th scope="col">第一年</th>
+                    <th scope="col">第二年</th>
+                    <th scope="col">第三年</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>营业收入</td>
+                    <td>202.3</td>
+                    <td>650.6</td>
+                    <td>1,169.8</td>
+                  </tr>
+                  <tr>
+                    <td>税前经营利润</td>
+                    <td class="neg">−156.8</td>
+                    <td class="pos">103.7</td>
+                    <td class="pos">373.7</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="fund-bar reveal" style="--d:280ms">
+              <span>项目资金 <strong>220–250 万元</strong></span>
+              <span>其中首年媒体投流 <strong>100 万元</strong></span>
+            </div>
+            <p class="footnote reveal" style="--d:340ms">积极情景测算，尚待验证。注册获客成本 12 元，激活率 65%，激活首付率 10%，月续费率 88%。会员实收 59 元/月，自然新增占比由首年 33% 升至第三年 60%。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section class="section s-close" id="s06" data-index="5" aria-label="致谢">
+      <p class="counter reveal" style="position:absolute;top:var(--section-pad);right:calc(var(--section-pad) + 2.5rem)"><span>06</span> / 06</p>
+      <div class="close-inner">
+        <p class="close-slogan reveal" style="--d:100ms">
+          用真实的人生经历，<br />
+          <span class="line2">遇见同频的你。</span>
+        </p>
+        <p class="close-thanks reveal" style="--d:200ms">感谢聆听，请各位评委提问</p>
+        <img class="close-mascot reveal" style="--d:280ms" src="assets/xiaozhi.png" alt="小知" />
+        <p class="close-brand reveal" style="--d:360ms">北回归线</p>
+        <p class="close-partner reveal" style="--d:420ms">小知，你的倾听伙伴</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const deck = document.getElementById("deck");
+      const sections = Array.from(deck.querySelectorAll(".section"));
+      const dots = Array.from(document.querySelectorAll(".dots a"));
+      let index = 0;
+      let locking = false;
+
+      function setActive(i, scroll) {
+        index = Math.max(0, Math.min(sections.length - 1, i));
+        sections.forEach((s, n) => s.classList.toggle("is-active", n === index));
+        dots.forEach((d, n) => d.setAttribute("aria-current", n === index ? "true" : "false"));
+        if (scroll) {
+          locking = true;
+          sections[index].scrollIntoView({ behavior: prefersReduced() ? "auto" : "smooth", block: "start" });
+          setTimeout(() => { locking = false; }, 700);
+        }
+      }
+
+      function prefersReduced() {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      }
+
+      // Intersection observer for active section + reveals
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting && e.intersectionRatio >= 0.55) {
+              const i = Number(e.target.dataset.index);
+              if (!locking) setActive(i, false);
+            }
+          });
+        },
+        { root: deck, threshold: [0.55, 0.7] }
+      );
+      sections.forEach((s) => io.observe(s));
+
+      dots.forEach((d) => {
+        d.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          setActive(Number(d.dataset.i), true);
+        });
+      });
+
+      function go(delta) {
+        setActive(index + delta, true);
+      }
+
+      window.addEventListener("keydown", (e) => {
+        const keys = ["ArrowDown", "PageDown", " ", "ArrowUp", "PageUp", "Home", "End"];
+        if (!keys.includes(e.key)) return;
+        // ignore when typing in inputs (none here, but safe)
+        if (e.target.matches("input, textarea, [contenteditable]")) return;
+        e.preventDefault();
+        if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") go(1);
+        else if (e.key === "ArrowUp" || e.key === "PageUp") go(-1);
+        else if (e.key === "Home") setActive(0, true);
+        else if (e.key === "End") setActive(sections.length - 1, true);
+      });
+
+      // First paint active
+      setActive(0, false);
+    })();
+  </script>
+</body>
+</html>
