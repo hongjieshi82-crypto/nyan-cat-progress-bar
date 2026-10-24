@@ -189,24 +189,15 @@
         linear-gradient(165deg, var(--paper) 0%, var(--paper-warm) 100%);
       justify-content: space-between;
       align-items: stretch;
+      position: relative;
     }
 
     .home-top {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
-    }
-
-    .brand-mark {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-    }
-
-    .brand-mark img {
-      height: 28px;
-      width: auto;
-      display: block;
+      position: relative;
+      z-index: 3;
     }
 
     .home-center {
@@ -214,49 +205,50 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: flex-start;
-      max-width: 52rem;
+      align-items: center;
       position: relative;
       z-index: 2;
+      width: 100%;
+      padding-bottom: clamp(1rem, 4vh, 3rem);
     }
 
-    .wordmark {
-      font-family: var(--serif);
-      font-weight: 700;
-      font-size: clamp(3.8rem, 11vw, 8.5rem);
-      line-height: 1.02;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      margin-bottom: clamp(1.25rem, 3vh, 2rem);
+    .home-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: min(72vw, 560px);
+      gap: clamp(1.1rem, 2.8vh, 1.75rem);
+    }
+
+    .home-logo {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 28px rgba(112, 81, 197, 0.08));
     }
 
     .slogan {
       font-family: var(--serif);
       font-weight: 400;
-      font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+      font-size: clamp(0.95rem, 1.7vw, 1.2rem);
       color: var(--muted);
-      max-width: 22em;
-      line-height: 1.55;
+      line-height: 1.5;
+      letter-spacing: 0.28em;
+      text-align: center;
+      width: 100%;
+      margin: 0;
+      padding-left: 0.28em; /* optical balance for letter-spacing */
+      white-space: nowrap;
     }
 
-    .slogan em {
-      font-style: normal;
-      color: var(--purple);
-    }
-
-    .home-mascot {
-      position: absolute;
-      right: clamp(-2%, 2vw, 4%);
-      bottom: clamp(-4%, 0vh, 2%);
-      width: min(38vw, 420px);
-      height: auto;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.95;
-      mix-blend-mode: multiply;
-      -webkit-mask-image: radial-gradient(ellipse 72% 72% at 50% 48%, #000 52%, transparent 78%);
-      mask-image: radial-gradient(ellipse 72% 72% at 50% 48%, #000 52%, transparent 78%);
-      filter: drop-shadow(0 24px 40px rgba(112, 81, 197, 0.14));
+    .home-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+      position: relative;
+      z-index: 3;
     }
 
     .home-hint {
@@ -276,6 +268,21 @@
       display: grid;
       place-items: center;
       animation: bob 2.2s var(--ease) infinite;
+      flex-shrink: 0;
+    }
+
+    .home-team {
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: 0.04em;
+      background: var(--white);
+      border: 1px solid var(--ink);
+      border-radius: 8px;
+      padding: 0.45rem 0.85rem;
+      line-height: 1.2;
+      box-shadow: 0 8px 24px rgba(46, 37, 51, 0.06);
     }
 
     @keyframes bob {
@@ -870,16 +877,17 @@
         padding-bottom: 3.5rem;
       }
       .dots { right: 0.65rem; }
-      .home-mascot {
-        width: min(48vw, 220px);
-        opacity: 0.75;
+      .home-brand { width: min(88vw, 420px); }
+      .slogan {
+        white-space: normal;
+        letter-spacing: 0.18em;
+        font-size: 0.92rem;
       }
       .team-grid { grid-template-columns: 1fr; }
       .pain-layout,
       .demo-layout,
       .biz-layout { grid-template-columns: 1fr; }
       .milestones { grid-template-columns: 1fr 1fr; }
-      .wordmark { font-size: clamp(3rem, 14vw, 4.5rem); }
     }
 
     @media (max-height: 720px) and (min-width: 901px) {
@@ -887,7 +895,6 @@
       .person-name { font-size: 1.25rem; }
       .person-duties { font-size: 0.8rem; padding-top: 0.5rem; }
       .section-title { font-size: 1.6rem; }
-      .wordmark { font-size: clamp(3.2rem, 8vw, 5.5rem); }
     }
   </style>
 </head>
@@ -896,7 +903,7 @@
     THESIS: Warm paper pitch manuscript — team wordmark 北回归线 as the hero memory; refuses neon-startup metric heroes and same-size icon card scaffolds.
     OWN-WORLD: Paper #FBF9F7/#F6F1EA, ink #2E2533, purple #7051C5, lavender wash #EEE8F7; Noto Serif SC display + Noto Sans SC UI; soft device frame + mascot warmth.
     STORY: Judges meet team → feel pain→solution → see product → trust plan → leave with slogan.
-    FIRST VIEWPORT: 01/06 counter, massive centered-left 北回归线, slogan, soft 小知 lower-right on paper/lavender wash.
+    FIRST VIEWPORT: 01/06 counter, centered SageMeet logo lockup + spaced slogan, 队名：北回归线 bottom-right on paper/lavender wash.
     FORM: Brief-pinned editorial warm-paper pitch (code-led; brief paints the picture; executor session).
     FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
   -->
@@ -914,25 +921,25 @@
     <!-- 01 -->
     <section class="section s-home is-active" id="s01" data-index="0" aria-label="首页">
       <div class="home-top">
-        <div class="brand-mark reveal" style="--d:60ms">
-          <img src="assets/logo.png" alt="SageMeet 智遇" />
-        </div>
         <p class="counter reveal" style="--d:80ms"><span>01</span> / 06</p>
       </div>
 
       <div class="home-center">
-        <h1 class="wordmark reveal" style="--d:140ms">北回归线</h1>
-        <p class="slogan reveal" style="--d:280ms">用真实的人生经历，遇见同频的你。</p>
+        <div class="home-brand reveal" style="--d:140ms">
+          <img class="home-logo" src="assets/logo.png" alt="SageMeet 智遇" />
+          <p class="slogan">用真实的人生经历 遇见同频的你</p>
+        </div>
       </div>
 
-      <img class="home-mascot reveal" style="--d:400ms" src="assets/xiaozhi.png" alt="小知" />
-
-      <p class="home-hint reveal" style="--d:520ms">
-        <span class="chev" aria-hidden="true">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-        滚轮或方向键翻页
-      </p>
+      <div class="home-footer">
+        <p class="home-hint reveal" style="--d:320ms">
+          <span class="chev" aria-hidden="true">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          滚轮或方向键翻页
+        </p>
+        <p class="home-team reveal" style="--d:360ms">队名：北回归线</p>
+      </div>
     </section>
 
     <!-- 02 -->
